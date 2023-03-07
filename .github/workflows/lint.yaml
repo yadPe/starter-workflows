@@ -16,7 +16,7 @@ jobs:
       - name: Cleanup workflow build artifacts
         run: |
           REPO=${{ github.repository }}
-          PARENT_ARTIFACTS_URL=$(jq -r .workflow_run.artifacts_url $GITHUB_EVENT_PATH) || ${{ github.event.workflow_run.payload.workflow_run.id }}
+          PARENT_ARTIFACTS_URL=$(jq -r .workflow_run.artifacts_url $GITHUB_EVENT_PATH)
 
           echo "Fetching list of artifacts id (up to 100)..."
           ARTIFACT_IDS=$(gh api -XGET $PARENT_ARTIFACTS_URL -F per_page=100  --jq '.artifacts[] | select( .name ==  "build") | .id')
