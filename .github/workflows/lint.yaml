@@ -18,9 +18,9 @@ jobs:
           REPO=${{ github.repository }}
           PARENT_EVENT_PATH=$(jq -r .workflow.path $GITHUB_EVENT_PATH)
           PARENT_RUN_ID=$(jq -r .head_run_id $PARENT_EVENT_PATH)
-          echo "parent run id is $PARENT_RUN_ID with default $TEST_RUN_ID"
+          echo "parent run id is ${PARENT_RUN_ID} with default ${TEST_RUN_ID}"
 
-          echo "Fetching list of artifacts id (up to 100) for run id PARENT_RUN_ID..."
+          echo "Fetching list of artifacts id (up to 100) for run id ${PARENT_RUN_ID}..."
           ARTIFACT_IDS=$(gh api -XGET /repos/$REPO/actions/runs/$PARENT_RUN_ID/artifacts -F per_page=100  --jq '.artifacts[] | select( .name ==  "build") | .id')
 
           ## Setting this to not fail the workflow while deleting cache keys. 
