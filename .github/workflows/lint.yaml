@@ -16,13 +16,10 @@ jobs:
       - name: Cleanup workflow build artifacts
         run: |
           REPO=${{ github.repository }}
-          cat $GITHUB_EVENT_PATH
-          PARENT_EVENT_PATH=$(jq -r .workflow.path $GITHUB_EVENT_PATH)
-          PARENT_RUN_ID=$(jq -r .head_run_id $PARENT_EVENT_PATH)
-          echo "parent run id is ${PARENT_RUN_ID} with default ${TEST_RUN_ID}"
+          PARENT_ARTIFACTS_URL=$(jq -r .workflow_run.artifacts_url $GITHUB_EVENT_PATH) || ${{ github.event.workflow_run.payload.workflow_run.id }}
 
-          echo "Fetching list of artifacts id (up to 100) for run id ${PARENT_RUN_ID}..."
-          ARTIFACT_IDS=$(gh api -XGET /repos/$REPO/actions/runs/$PARENT_RUN_ID/artifacts -F per_page=100  --jq '.artifacts[] | select( .name ==  "build") | .id')
+          echo "Fetching list of artifacts id (up to 100)..."
+          ARTIFACT_IDS=$(gh api -XGET $PARENT_ARTIFACTS_URL -F per_page=100  --jq '.artifacts[] | select( .name ==  "build") | .id')
 
           ## Setting this to not fail the workflow while deleting cache keys. 
           set +e
