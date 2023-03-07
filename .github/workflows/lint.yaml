@@ -1,31 +1,37 @@
-name: Lint
-
+name: triggered
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_run:
+    workflows: [Parent]
+    types:
+      - completed
 
 jobs:
-
-  pre-commit:
-    name: pre-commit
+  cleanup:
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }} # so we can still re-run single jobs in case of failure
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
+      - name: Cleanup workflow build artifacts
+        run: |
+          REPO=${{ github.repository }}
+          PARENT_EVENT_PATH=$(jq -r .workflow.path $GITHUB_EVENT_PATH)
+          TEST_RUN_ID=${{ github.event.workflow_run.payload.workflow_run.id }}
+          PARENT_RUN_ID=$(jq -r .head_run_id $PARENT_EVENT_PATH)
+          echo "parent run id is $PARENT_RUN_ID with default $TEST_RUN_ID"
 
-      - name: Cache pre-commit
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
+          echo "Fetching list of artifacts id (up to 100) for run id ${PARENT_RUN_ID:=TEST_RUN_ID}..."
+          ARTIFACT_IDS=$(gh api -XGET /repos/$REPO/actions/runs/${PARENT_RUN_ID:=TEST_RUN_ID}/artifacts -F per_page=100  --jq '.artifacts[] | select( .name ==  "build") | .id')
 
-      - name: Install pre-commit
-        run: pip3 install pre-commit
+          ## Setting this to not fail the workflow while deleting cache keys. 
+          set +e
+          echo "Deleting build artifacts..."
+          for ARTIFACT_ID_TO_DELETE in ${ARTIFACT_IDS}; 
+          do
+            gh api -X DELETE /repos/$REPO/actions/artifacts/$ARTIFACT_ID_TO_DELETE
+          done
+          echo "Done"
 
-      - name: Run pre-commit
-        run: pre-commit run --all-files --show-diff-on-failure --color always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
