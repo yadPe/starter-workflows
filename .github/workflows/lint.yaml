@@ -16,8 +16,8 @@ jobs:
       - name: Cleanup workflow build artifacts
         run: |
           REPO=${{ github.repository }}
-          PARENT_EVENT_PATH=$(jq -r .workflow.path $GITHUB_EVENT_PATH)
           TEST_RUN_ID=${{ github.event.workflow_run.payload.workflow_run.id }}
+          PARENT_EVENT_PATH=$(jq -r .workflow.path $GITHUB_EVENT_PATH)
           PARENT_RUN_ID=$(jq -r .head_run_id $PARENT_EVENT_PATH)
           echo "parent run id is $PARENT_RUN_ID with default $TEST_RUN_ID"
 
